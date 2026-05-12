@@ -21,7 +21,7 @@
     // Simulation
     simulation: {
       enabled: true,        // Start in simulation mode
-      forceSimulation: false, // true = NÃO tenta MQTT (só simulação). Mude para false no lab!
+      forceSimulation: true, // true = NÃO tenta MQTT (só simulação). Mude para false no lab!
       intervalMs: 1500,     // Data generation interval
     },
 
@@ -451,8 +451,17 @@
             temp: data.temp || 0,
             humidity: data.umid || data.humidity || 0,
           });
-          // Sync mode from ESP32
-          if (data.modo) {
+
+          // ── Sync setpoint do ESP32 → slider do dashboard ──
+          if (data.setpoint != null && data.setpoint !== state.setpoint) {
+            state.setpoint = data.setpoint;
+            dom.setpointSlider.value = data.setpoint;
+            dom.sliderValue.textContent = data.setpoint + ' lux';
+            dom.setpointDisplay.textContent = data.setpoint + ' lux';
+          }
+
+          // ── Sync modo do ESP32 → botões do dashboard ──
+          if (data.modo && data.modo !== state.mode) {
             setActiveMode(data.modo);
           }
         } catch (e) {
