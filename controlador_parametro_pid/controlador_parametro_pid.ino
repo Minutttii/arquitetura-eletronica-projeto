@@ -26,7 +26,7 @@ double kp = 1.0;   // Reduzido para menos solavancos
 double ki = 0.5;   // Reduzido drasticamente para uma transição suave
 double kd = 0.0;   
 
-double setpointLux = 600.0;
+double setpointLux = 200.0;
 
 // Memória do Controlador
 double erroAcumulado = 0.0;
