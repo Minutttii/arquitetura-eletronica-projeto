@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard de Monitoramento e Controle de Luminosidade — Sistema Inteligente IoT com ESP32">
+  <title>LuxControl — Dashboard IoT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <!-- MQTT.js (WebSocket) — used when connecting to real broker -->
+  <script src="https://unpkg.com/mqtt@5.10.3/dist/mqtt.min.js"></script>
+</head>
+<body>
+
+  <!-- ============ HEADER ============ -->
+  <header id="main-header">
+    <div class="header-left">
+      <div class="logo-icon">
+        <svg viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="16" stroke="url(#logo-grad)" stroke-width="2.5" fill="none"/>
+          <circle cx="20" cy="20" r="6" fill="url(#logo-grad)"/>
+          <line x1="20" y1="2" x2="20" y2="8" stroke="url(#logo-grad)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="20" y1="32" x2="20" y2="38" stroke="url(#logo-grad)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="2" y1="20" x2="8" y2="20" stroke="url(#logo-grad)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="32" y1="20" x2="38" y2="20" stroke="url(#logo-grad)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="7.3" y1="7.3" x2="11.5" y2="11.5" stroke="url(#logo-grad)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="28.5" y1="28.5" x2="32.7" y2="32.7" stroke="url(#logo-grad)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="7.3" y1="32.7" x2="11.5" y2="28.5" stroke="url(#logo-grad)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="28.5" y1="11.5" x2="32.7" y2="7.3" stroke="url(#logo-grad)" stroke-width="2" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="logo-grad" x1="0" y1="0" x2="40" y2="40">
+              <stop offset="0%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#f97316"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1>LuxControl</h1>
+        <span class="subtitle">Sistema Inteligente de Iluminação Adaptativa</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="connection-status" class="status-badge disconnected">
+        <span class="status-dot"></span>
+        <span id="status-text">Simulação</span>
+      </div>
+      <div id="clock" class="clock-display">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- ============ MAIN GRID ============ -->
+  <main id="dashboard-grid">
+
+    <!-- ──── ROW 1: GAUGE + METRIC CARDS ──── -->
+    <section class="row-top">
+
+      <!-- LUMINOSITY GAUGE (big card) -->
+      <div class="card card-gauge" id="card-gauge">
+        <div class="card-header">
+          <span class="card-icon">☀️</span>
+          <span class="card-title">Luminosidade</span>
+        </div>
+        <div class="gauge-container">
+          <svg viewBox="0 0 200 130" class="gauge-svg">
+            <defs>
+              <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="25%" stop-color="#06b6d4"/>
+                <stop offset="50%" stop-color="#22c55e"/>
+                <stop offset="75%" stop-color="#f59e0b"/>
+                <stop offset="100%" stop-color="#ef4444"/>
+              </linearGradient>
+            </defs>
+            <!-- Track -->
+            <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14" stroke-linecap="round"/>
+            <!-- Value arc -->
+            <path id="gauge-arc" d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="url(#gauge-gradient)" stroke-width="14" stroke-linecap="round"
+                  stroke-dasharray="251.3" stroke-dashoffset="251.3" class="gauge-arc-animated"/>
+            <!-- Needle -->
+            <line id="gauge-needle" x1="100" y1="110" x2="100" y2="38" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" class="gauge-needle"/>
+            <circle cx="100" cy="110" r="5" fill="#f59e0b"/>
+          </svg>
+          <div class="gauge-value-container">
+            <span id="lux-value" class="gauge-value">0</span>
+            <span class="gauge-unit">lux</span>
+          </div>
+          <div class="gauge-labels">
+            <span>0</span>
+            <span>500</span>
+            <span>1000</span>
+          </div>
+        </div>
+        <div class="gauge-setpoint-line">
+          <span class="label">Setpoint:</span>
+          <span id="setpoint-display" class="value-accent">300 lux</span>
+        </div>
+      </div>
+
+      <!-- METRIC CARDS -->
+      <div class="metrics-grid">
+
+        <!-- PWM CARD -->
+        <div class="card card-metric" id="card-pwm">
+          <div class="card-header">
+            <span class="card-icon">⚡</span>
+            <span class="card-title">PWM</span>
+          </div>
+          <div class="metric-body">
+            <span id="pwm-value" class="metric-value">0</span>
+            <span class="metric-unit">%</span>
+          </div>
+          <div class="metric-bar-track">
+            <div id="pwm-bar" class="metric-bar" style="width: 0%"></div>
+          </div>
+          <div class="metric-range">
+            <span>0%</span><span>100%</span>
+          </div>
+        </div>
+
+        <!-- TEMPERATURE CARD -->
+        <div class="card card-metric" id="card-temp">
+          <div class="card-header">
+            <span class="card-icon">🌡️</span>
+            <span class="card-title">Temperatura</span>
+          </div>
+          <div class="metric-body">
+            <span id="temp-value" class="metric-value">--</span>
+            <span class="metric-unit">°C</span>
+          </div>
+          <div class="metric-stats">
+            <span class="stat-high" id="temp-max">Máx: —</span>
+            <span class="stat-low" id="temp-min">Mín: —</span>
+          </div>
+        </div>
+
+        <!-- HUMIDITY CARD -->
+        <div class="card card-metric" id="card-humidity">
+          <div class="card-header">
+            <span class="card-icon">💧</span>
+            <span class="card-title">Umidade</span>
+          </div>
+          <div class="metric-body">
+            <span id="humidity-value" class="metric-value">--</span>
+            <span class="metric-unit">%</span>
+          </div>
+          <div class="metric-stats">
+            <span class="stat-high" id="humidity-max">Máx: —</span>
+            <span class="stat-low" id="humidity-min">Mín: —</span>
+          </div>
+        </div>
+
+        <!-- ERROR CARD -->
+        <div class="card card-metric" id="card-error">
+          <div class="card-header">
+            <span class="card-icon">📐</span>
+            <span class="card-title">Erro PID</span>
+          </div>
+          <div class="metric-body">
+            <span id="error-value" class="metric-value">0</span>
+            <span class="metric-unit">lux</span>
+          </div>
+          <div class="metric-sub" id="error-direction">Dentro do alvo</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ──── ROW 2: CHART ──── -->
+    <section class="row-chart">
+      <div class="card card-chart" id="card-chart">
+        <div class="card-header">
+          <span class="card-icon">📈</span>
+          <span class="card-title">Histórico em Tempo Real</span>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span> Lux</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#06b6d4"></span> Setpoint</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#a855f7"></span> PWM %</span>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="realtime-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──── ROW 3: CONTROL PANEL ──── -->
+    <section class="row-controls">
+
+      <!-- MODE SELECTOR -->
+      <div class="card card-control" id="card-mode">
+        <div class="card-header">
+          <span class="card-icon">🎛️</span>
+          <span class="card-title">Modo de Operação</span>
+        </div>
+        <div class="mode-buttons">
+          <button id="btn-auto" class="mode-btn active" data-mode="auto">
+            <span class="mode-icon">🤖</span>
+            <span class="mode-label">Automático</span>
+            <span class="mode-desc">Controle PID</span>
+          </button>
+          <button id="btn-manual" class="mode-btn" data-mode="manual">
+            <span class="mode-icon">✋</span>
+            <span class="mode-label">Manual</span>
+            <span class="mode-desc">Duty fixo</span>
+          </button>
+          <button id="btn-off" class="mode-btn" data-mode="off">
+            <span class="mode-icon">⏹️</span>
+            <span class="mode-label">Desligado</span>
+            <span class="mode-desc">LED apagado</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SETPOINT SLIDER -->
+      <div class="card card-control" id="card-setpoint">
+        <div class="card-header">
+          <span class="card-icon">🎯</span>
+          <span class="card-title">Setpoint de Luminosidade</span>
+        </div>
+        <div class="slider-container">
+          <input type="range" id="setpoint-slider" min="0" max="1000" value="300" step="10" class="premium-slider">
+          <div class="slider-labels">
+            <span>0 lux</span>
+            <span id="slider-value" class="slider-current">300 lux</span>
+            <span>1000 lux</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANUAL DUTY INPUT -->
+      <div class="card card-control" id="card-manual-duty">
+        <div class="card-header">
+          <span class="card-icon">💡</span>
+          <span class="card-title">Duty Cycle Manual</span>
+        </div>
+        <div class="manual-control">
+          <input type="number" id="manual-duty-input" min="0" max="100" value="50" class="duty-input" placeholder="50">
+          <span class="duty-unit">%</span>
+          <button id="btn-send-duty" class="btn-send">Enviar</button>
+        </div>
+        <div class="manual-presets">
+          <button class="preset-btn" data-duty="0">0%</button>
+          <button class="preset-btn" data-duty="25">25%</button>
+          <button class="preset-btn" data-duty="50">50%</button>
+          <button class="preset-btn" data-duty="75">75%</button>
+          <button class="preset-btn" data-duty="100">100%</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ──── ROW 4: SYSTEM INFO ──── -->
+    <section class="row-info">
+      <div class="card card-info" id="card-pid-params">
+        <div class="card-header">
+          <span class="card-icon">🧮</span>
+          <span class="card-title">Parâmetros PID</span>
+        </div>
+        <div class="params-grid">
+          <div class="param-item">
+            <span class="param-label">Kp</span>
+            <span id="param-kp" class="param-value">3.1500</span>
+          </div>
+          <div class="param-item">
+            <span class="param-label">Ki</span>
+            <span id="param-ki" class="param-value">18.900</span>
+          </div>
+          <div class="param-item">
+            <span class="param-label">Kd</span>
+            <span id="param-kd" class="param-value">0.0000</span>
+          </div>
+          <div class="param-item">
+            <span class="param-label">Método</span>
+            <span id="param-method" class="param-value">Z-N</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-info" id="card-system">
+        <div class="card-header">
+          <span class="card-icon">📡</span>
+          <span class="card-title">Sistema</span>
+        </div>
+        <div class="system-info">
+          <div class="info-row">
+            <span class="info-label">MCU</span>
+            <span class="info-value">ESP32 DevKit</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Protocolo</span>
+            <span class="info-value">MQTT / TLS</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Broker</span>
+            <span id="info-broker" class="info-value">HiveMQ Cloud</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Amostras</span>
+            <span id="info-samples" class="info-value">0</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Uptime</span>
+            <span id="info-uptime" class="info-value">00:00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-info" id="card-log">
+        <div class="card-header">
+          <span class="card-icon">📋</span>
+          <span class="card-title">Log de Eventos</span>
+        </div>
+        <div id="event-log" class="event-log">
+          <div class="log-entry log-info">Sistema inicializado — Modo simulação ativo</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer id="main-footer">
+    <span>Projeto Integrado — Arquitetura de Computadores & IoT</span>
+    <span class="footer-sep">|</span>
+    <span>ESP32 + LDR + PID + MQTT</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

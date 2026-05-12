@@ -26,7 +26,7 @@ double kp = 3.15;
 double ki = 18.9;  
 double kd = 0.0;   
 
-double setpointLux = 600.0;
+double setpointLux = 200.0;
 
 // Memória do Controlador
 double erroAcumulado = 0.0;
