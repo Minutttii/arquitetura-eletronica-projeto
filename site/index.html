@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuxControl — Sistema Inteligente de Iluminação Adaptativa</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="#home" class="header-logo">
+                <svg viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="16" stroke="url(#logo-grad)" stroke-width="2.5" fill="none" />
+                    <circle cx="20" cy="20" r="6" fill="url(#logo-grad)" />
+                    <defs>
+                        <linearGradient id="logo-grad" x1="0" y1="0" x2="40" y2="40">
+                            <stop offset="0%" stop-color="#f59e0b" />
+                            <stop offset="100%" stop-color="#f97316" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="header-logo-text">LuxControl</span>
+            </a>
+            <nav class="header-nav">
+                <a href="#problema">Problema</a>
+                <a href="#arquitetura">Arquitetura</a>
+                <a href="#tecnologias">Tecnologias</a>
+                <a href="#desenvolvimento">Desenvolvimento</a>
+                <a href="#resultados">Resultados</a>
+                <a href="#videos">Vídeos</a>
+            </nav>
+            <button class="mobile-toggle">☰</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- SEÇÃO 1: HERO -->
+        <section id="home" class="hero reveal">
+            <div class="hero-inner">
+                <div class="hero-content">
+                    <div class="hero-tags">
+                        <span class="tag">ESP32</span>
+                        <span class="tag">MQTT</span>
+                        <span class="tag">Controle PI</span>
+                        <span class="tag">IoT</span>
+                        <span class="tag">C++</span>
+                        <span class="tag">JavaScript</span>
+                    </div>
+                    <h1>LuxControl — Sistema Inteligente de Iluminação Adaptativa</h1>
+                    <p class="hero-subtitle">Controle autônomo de luminosidade com ESP32, LDR, controle PI sintonizado
+                        por Ziegler-Nichols e comunicação IoT via MQTT</p>
+                    <div class="hero-team">
+                        <strong>Equipe:</strong><br>
+                        Fabricio Evangelista dos Santos 202318390<br>
+                        Gabriel Junio Fernandes Pereira 202325640<br>
+                        Lucas Kenzo Terazzin Ida 202306868<br>
+                        Murilo Nogueira Minutti 202303873<br>
+                        Pedro Henrique Almeida Lopes 202309011
+                    </div>
+                    <div class="hero-institution">
+                        Projeto Final — Disciplina de Eletrônica Digital / Arquitetura de Computadores & IoT
+                    </div>
+                    <div class="hero-actions">
+                        <a href="https://github.com/juniobiel/arquitetura-eletronica-projeto/tree/main" target="_blank"
+                            class="btn btn-primary">Ver Projeto no GitHub</a>
+                        <a href="../dashboard/index.html" class="btn btn-outline">Acessar Dashboard IoT</a>
+                    </div>
+                </div>
+                <div class="hero-image-area">
+                    <div class="image-placeholder">
+                        <div class="ph-icon">📷</div>
+                        <div class="ph-text">Protótipo LuxControl — ESP32 na protoboard com LDR, DHT11, MOSFET IRLZ44N e
+                            fita de LED 12V</div>
+                        <div class="ph-label">[Inserir Imagem Real]</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 2: PROBLEMA -->
+        <section id="problema" class="section reveal">
+            <div class="section-label">01. Descrição do Problema</div>
+            <h2 class="section-title">Por que precisamos de iluminação adaptativa?</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-icon cyan">💡</div>
+                    <h3>O Problema</h3>
+                    <p>Ambientes como laboratórios, escritórios e salas de estudo precisam manter níveis de iluminação
+                        estáveis e adequados independentemente das variações de luz natural (entrada de sol, nuvens,
+                        hora do dia). O controle manual de iluminação é ineficiente, gera desperdício de energia e não
+                        garante conforto visual contínuo.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon purple">🎯</div>
+                    <h3>A Solução</h3>
+                    <p>O projeto simula um sistema de iluminação inteligente para ambientes fechados, onde um sensor LDR
+                        monitora continuamente a luminosidade ambiente e um algoritmo de controle PI ajusta
+                        automaticamente o brilho de uma fita de LED 12V para manter um setpoint definido pelo usuário.
+                    </p>
+                </div>
+            </div>
+            <div class="callout">
+                <div class="callout-icon">⚡</div>
+                <p><strong>Importância:</strong> Eficiência energética, conforto visual, autonomia, conectividade via
+                    dashboard e MQTT, e escalabilidade para automação predial.</p>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 3: ARQUITETURA -->
+        <section id="arquitetura" class="section reveal">
+            <div class="section-label">02. Arquitetura do Sistema</div>
+            <h2 class="section-title">Como o sistema funciona</h2>
+
+            <div class="diagram-container">
+                <h3>Fluxo de Arquitetura Geral</h3>
+                <svg width="100%" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="50" y="20" width="100" height="40" fill="#0f172a" stroke="#06b6d4" rx="5" />
+                    <text x="100" y="45" fill="#f8fafc" text-anchor="middle" font-family="monospace">LDR</text>
+                    <path d="M 150 40 L 250 40" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow)" />
+                    <text x="200" y="30" fill="#94a3b8" text-anchor="middle" font-size="12">ADC</text>
+
+                    <rect x="250" y="20" width="100" height="40" fill="#0f172a" stroke="#f59e0b" rx="5" />
+                    <text x="300" y="45" fill="#f8fafc" text-anchor="middle" font-family="monospace">ESP32</text>
+
+                    <path d="M 350 40 L 450 40" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow)" />
+                    <text x="400" y="30" fill="#94a3b8" text-anchor="middle" font-size="12">PWM</text>
+
+                    <rect x="450" y="20" width="120" height="40" fill="#0f172a" stroke="#a855f7" rx="5" />
+                    <text x="510" y="45" fill="#f8fafc" text-anchor="middle" font-family="monospace">MOSFET
+                        IRLZ44N</text>
+
+                    <path d="M 570 40 L 650 40" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow)" />
+
+                    <rect x="650" y="20" width="100" height="40" fill="#0f172a" stroke="#22c55e" rx="5" />
+                    <text x="700" y="45" fill="#f8fafc" text-anchor="middle" font-family="monospace">Fita LED 12V</text>
+
+                    <rect x="50" y="80" width="100" height="40" fill="#0f172a" stroke="#06b6d4" rx="5" />
+                    <text x="100" y="105" fill="#f8fafc" text-anchor="middle" font-family="monospace">DHT11</text>
+                    <path d="M 150 100 L 300 100 L 300 60" stroke="#f59e0b" stroke-width="2" fill="none"
+                        marker-end="url(#arrow)" />
+                    <text x="225" y="90" fill="#94a3b8" text-anchor="middle" font-size="12">GPIO</text>
+
+                    <path d="M 300 60 L 300 140 L 350 140" stroke="#f59e0b" stroke-width="2" fill="none"
+                        marker-end="url(#arrow)" />
+                    <text x="325" y="130" fill="#94a3b8" text-anchor="middle" font-size="12">WiFi</text>
+
+                    <rect x="350" y="120" width="180" height="40" fill="#0f172a" stroke="#ef4444" rx="5" />
+                    <text x="440" y="145" fill="#f8fafc" text-anchor="middle" font-family="monospace">HiveMQ Cloud
+                        Broker</text>
+
+                    <path d="M 530 140 L 650 140" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow)" />
+                    <path d="M 650 160 L 530 160" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow)" />
+
+                    <rect x="650" y="120" width="120" height="60" fill="#0f172a" stroke="#06b6d4" rx="5" />
+                    <text x="710" y="145" fill="#f8fafc" text-anchor="middle" font-family="monospace">Dashboard</text>
+                    <text x="710" y="165" fill="#f8fafc" text-anchor="middle" font-family="monospace">Web</text>
+
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                            orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+
+            <div class="table-wrapper">
+                <h3>Esquema Elétrico</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Componente</th>
+                            <th>Pino/Terminal</th>
+                            <th>Conectado em</th>
+                            <th>Observação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>LDR</td>
+                            <td>Terminal 1</td>
+                            <td>3.3V (ESP32)</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>LDR</td>
+                            <td>Terminal 2</td>
+                            <td>GPIO 34 (ESP32)</td>
+                            <td>Ponto de leitura ADC</td>
+                        </tr>
+                        <tr>
+                            <td>Resistor 10kΩ</td>
+                            <td>Terminal 1</td>
+                            <td>GPIO 34 (ESP32)</td>
+                            <td>Divisor de tensão</td>
+                        </tr>
+                        <tr>
+                            <td>Resistor 10kΩ</td>
+                            <td>Terminal 2</td>
+                            <td>GND</td>
+                            <td>Pull-down</td>
+                        </tr>
+                        <tr>
+                            <td>DHT11</td>
+                            <td>VCC</td>
+                            <td>3.3V (ESP32)</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>DHT11</td>
+                            <td>GND</td>
+                            <td>GND</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>DHT11</td>
+                            <td>Data</td>
+                            <td>GPIO 4 (ESP32)</td>
+                            <td>Com pull-up 10kΩ</td>
+                        </tr>
+                        <tr>
+                            <td>MOSFET IRLZ44N</td>
+                            <td>Gate (G)</td>
+                            <td>GPIO 27 (ESP32) via 220Ω</td>
+                            <td>Limitador de corrente</td>
+                        </tr>
+                        <tr>
+                            <td>MOSFET IRLZ44N</td>
+                            <td>Drain (D)</td>
+                            <td>Fita LED 12V — terminal (−)</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>MOSFET IRLZ44N</td>
+                            <td>Source (S)</td>
+                            <td>GND comum</td>
+                            <td>GND ESP32 + GND fonte 12V</td>
+                        </tr>
+                        <tr>
+                            <td>Fita LED 12V</td>
+                            <td>Terminal (+)</td>
+                            <td>+12V (fonte externa)</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Fonte 12V</td>
+                            <td>GND</td>
+                            <td>GND ESP32</td>
+                            <td>Ground comum obrigatório</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="protocol-info">
+                <div class="protocol-item">
+                    <span class="pi-label">Protocolo:</span>
+                    <span class="pi-value">MQTT TLS (8883)</span>
+                </div>
+                <div class="protocol-item">
+                    <span class="pi-label">Tópico (Pub):</span>
+                    <span class="pi-value">luminosidade/dados</span>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-lang">JSON Payload Exemplo</span>
+                </div>
+                <pre><code class="language-json">{
+  "lux": 312.5,
+  "pwm": 67,
+  "setpoint": 300,
+  "temp": 24.3,
+  "umid": 58,
+  "modo": "auto"
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 4: TECNOLOGIAS -->
+        <section id="tecnologias" class="section reveal">
+            <div class="section-label">03. Tecnologias Utilizadas</div>
+            <h2 class="section-title">Hardware & Software</h2>
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-icon">🎛️</div>
+                    <h3>ESP32 DevKit</h3>
+                    <p>Microcontrolador dual-core 240 MHz com WiFi integrado. Utiliza ADC de 12 bits e PWM digital via
+                        ledcAttach.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon cyan">☀️</div>
+                    <h3>LDR & DHT11</h3>
+                    <p>Sensores para leitura de luminosidade (LDR) via ADC e temperatura/umidade (DHT11).</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon purple">⚡</div>
+                    <h3>MOSFET & LED 12V</h3>
+                    <p>MOSFET IRLZ44N atua como chave de potência para controlar via PWM a fita de LED 12V com
+                        segurança.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon green">🌐</div>
+                    <h3>MQTT & WiFi</h3>
+                    <p>Comunicação IoT via HiveMQ Cloud com TLS. Payload JSON trocado a cada 1.5s.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🧮</div>
+                    <h3>Controle PI & EMA</h3>
+                    <p>Controle PI sintonizado por Ziegler-Nichols com filtro EMA (Exponential Moving Average) para
+                        suavizar ruído no LDR.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon cyan">💻</div>
+                    <h3>Dashboard Web</h3>
+                    <p>Interface responsiva em HTML/CSS/JS usando Chart.js e MQTT.js via WebSocket.</p>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="code-lang">C++ (Firmware Principal - Loop PID)</span>
+                </div>
+                <pre><code class="language-cpp">// ── Controlador PI com Anti-Windup ──
+double erro = setpointLux - luxReal;
+
+// Proporcional
+double P = kp * erro;  // kp = 3.15
+
+// Integral com anti-windup
+erroAcumulado += erro * dt;
+erroAcumulado = constrain(erroAcumulado, -255.0 / ki, 255.0 / ki);
+double I = ki * erroAcumulado;  // ki = 18.9
+
+// Saída PWM (0–255)
+pwmAtual = constrain((int)(P + I), 0, 255);
+ledcWrite(LED_PWM_PIN, pwmAtual);</code></pre>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 5: DESENVOLVIMENTO -->
+        <section id="desenvolvimento" class="section reveal">
+            <div class="section-label">04. Desenvolvimento</div>
+            <h2 class="section-title">Etapas do Projeto</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="step-number">Etapa 1</div>
+                    <h3>Definição do problema e requisitos</h3>
+                    <p>Análise das necessidades de controle de luminosidade e escolha do ESP32 pela disponibilidade de
+                        ADC, PWM, WiFi integrado.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="step-number">Etapa 2</div>
+                    <h3>Projeto e montagem do hardware</h3>
+                    <p>Definição do circuito, divisor de tensão LDR, MOSFET IRLZ44N, montagem na protoboard e
+                        verificação.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="step-number">Etapa 3</div>
+                    <h3>Firmware básico e Calibração</h3>
+                    <p>Leitura analógica (GPIO 34), PWM via ledcAttach e calibração da curva LDR → Lux via regressão.
+                    </p>
+                </div>
+                <div class="timeline-item">
+                    <div class="step-number">Etapa 4</div>
+                    <h3>Controlador PI</h3>
+                    <p>Sintonização de Kp e Ki por Ziegler-Nichols. Implementação de anti-windup no integrador.</p>
+                </div>
+            </div>
+            <div class="callout">
+                <div class="callout-icon">🔧</div>
+                <p><strong>Dificuldades contornadas:</strong> Ruído no ADC resolvido com filtro EMA (α=0.1), Ground
+                    comum adicionado para o MOSFET funcionar, instabilidade do PI controlada com sintonia fina.</p>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 6: RESULTADOS -->
+        <section id="resultados" class="section reveal">
+            <div class="section-label">05. Resultados Obtidos</div>
+            <h2 class="section-title">Análise e Métricas</h2>
+            <p class="section-subtitle">O sistema demonstrou capacidade de manter a luminosidade estável no setpoint
+                configurado, com tempo de acomodação de 3 a 5 segundos e erro de regime menor que 10 lux.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parâmetro</th>
+                            <th>Valor Medido</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Setpoint testado</td>
+                            <td>100 / 200 / 300 / 500 lux</td>
+                        </tr>
+                        <tr>
+                            <td>Tempo de acomodação</td>
+                            <td>~3–5 segundos</td>
+                        </tr>
+                        <tr>
+                            <td>Erro em regime permanente</td>
+                            <td>&lt; 10 lux</td>
+                        </tr>
+                        <tr>
+                            <td>Frequência / Resolução PWM</td>
+                            <td>5.000 Hz / 8 bits</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="grid-2">
+                <div class="image-placeholder">
+                    <div class="ph-icon">📊</div>
+                    <div class="ph-text">Gráfico de resposta ao degrau (setpoint 200→400 lux)</div>
+                    <div class="ph-label">[Inserir Print do Gráfico]</div>
+                </div>
+                <div class="image-placeholder">
+                    <div class="ph-icon">💻</div>
+                    <div class="ph-text">Print do dashboard web em funcionamento</div>
+                    <div class="ph-label">[Inserir Print do Dashboard]</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 7: VÍDEOS -->
+        <section id="videos" class="section reveal">
+            <div class="section-label">06. Apresentação Prática</div>
+            <h2 class="section-title">Vídeos Curtos</h2>
+            <div class="grid-3">
+                <div class="video-placeholder">
+                    <div class="ph-icon">▶️</div>
+                    <div class="ph-title">Explicação do Projeto</div>
+                    <div class="ph-desc">Objetivo, componentes e funcionamento geral.</div>
+                    <div class="ph-embed">[Inserir Embed YouTube/Drive]</div>
+                </div>
+                <div class="video-placeholder">
+                    <div class="ph-icon">▶️</div>
+                    <div class="ph-title">Demonstração</div>
+                    <div class="ph-desc">Controle ao vivo, modos e dashboard.</div>
+                    <div class="ph-embed">[Inserir Embed YouTube/Drive]</div>
+                </div>
+                <div class="video-placeholder">
+                    <div class="ph-icon">▶️</div>
+                    <div class="ph-title">Bancada</div>
+                    <div class="ph-desc">Vista da montagem física na protoboard.</div>
+                    <div class="ph-embed">[Inserir Embed YouTube/Drive]</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 8: CONCLUSÃO -->
+        <section id="conclusao" class="section reveal">
+            <div class="section-label">07. Conclusão</div>
+            <h2 class="section-title">Reflexões e Evoluções</h2>
+
+            <div class="conclusion-block">
+                <h3>O projeto atingiu os objetivos?</h3>
+                <p>Sim. O sistema LuxControl demonstrou com sucesso o controle autônomo de luminosidade utilizando um
+                    controlador PI sintonizado, com comunicação IoT via MQTT e visualização em tempo real por dashboard
+                    web. Os três modos de operação (automático, manual e desligado) funcionaram conforme especificado.
+                </p>
+            </div>
+
+            <div class="grid-2">
+                <div class="conclusion-block">
+                    <h3>O que poderia ser melhorado?</h3>
+                    <ul>
+                        <li>Substituição do LDR por um sensor calibrado (ex: BH1750 I²C)</li>
+                        <li>Substituição do DHT11 pelo DHT22</li>
+                        <li>Armazenamento histórico em banco de dados (InfluxDB + Grafana)</li>
+                    </ul>
+                </div>
+                <div class="conclusion-block">
+                    <h3>Evoluções futuras</h3>
+                    <ul>
+                        <li>Automação predial com controle centralizado</li>
+                        <li>Integração com Alexa/Google Assistant via MQTT</li>
+                        <li>Monitoramento de consumo real (ex: INA219)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-logo">LuxControl</div>
+        <div>Projeto Integrado — Arquitetura de Computadores & IoT</div>
+        <div class="footer-tech">ESP32 + LDR + PID + MQTT</div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

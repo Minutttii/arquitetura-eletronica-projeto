@@ -21,7 +21,7 @@
     // Simulation
     simulation: {
       enabled: true,        // Start in simulation mode
-      forceSimulation: true, // true = NÃO tenta MQTT (só simulação). Mude para false no lab!
+      forceSimulation: false, // true = NÃO tenta MQTT (só simulação). Mude para false no lab!
       intervalMs: 1500,     // Data generation interval
     },
 
